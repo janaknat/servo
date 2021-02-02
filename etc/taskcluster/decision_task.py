@@ -804,6 +804,13 @@ def windows_build_task(name, package=True, arch="x86_64", rdp=False):
             sha256="6de14c9223226cf0cd8c965ecb08c51d62c770171a256991b4fddc25188cfa8e",
             path="python3",
         )
+        # mozjs's virtualenv expects a DLLs folder that contains dynamic libraries.
+        # The embedded python distribution does not come with this.
+        .with_script("""
+            mkdir %HOMEDRIVE%%HOMEPATH%\\python3\\DLLs
+            copy %HOMEDRIVE%%HOMEPATH%\\python3\\*.pyd %HOMEDRIVE%%HOMEPATH%\\python3\\DLLs
+            copy %HOMEDRIVE%%HOMEPATH%\\python3\\*.dll %HOMEDRIVE%%HOMEPATH%\\python3\\DLLs
+        """)
         .with_rustup()
     )
     if arch in hashes["non-devel"] and arch in hashes["devel"]:
