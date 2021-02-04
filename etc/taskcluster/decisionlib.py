@@ -474,9 +474,13 @@ class WindowsGenericWorkerTask(GenericWorkerTask):
         if self.rdp_info_artifact_name:
             rdp_scope = "generic-worker:allow-rdp:%s/%s" % (self.provisioner_id, self.worker_type)
             self.scopes.append(rdp_scope)
+        self.scopes.append("generic-worker:os-group:proj-servo/win2016/Administrators")
+        self.scopes.append("generic-worker:run-as-administrator:proj-servo/win2016")
+        self.with_features("runAsAdministrator")
         return dict_update_if_truthy(
             super().build_worker_payload(),
             rdpInfo=self.rdp_info_artifact_name,
+            osGroups=["Administrators"]
         )
 
     def with_rdp_info(self, *, artifact_name):
@@ -639,6 +643,24 @@ class WindowsGenericWorkerTask(GenericWorkerTask):
             pip install virtualenv==16.0.0
         """) \
         .with_path_from_homedir("python2", "python2\\Scripts")
+
+    def with_python3(self):
+        """
+        For Python 3, use `with_directory_mount` and the "embeddable zip file" distribution
+        from python.org.
+        You may need to remove `python37._pth` from the ZIP in order to work around
+        <https://bugs.python.org/issue34841>.
+        """
+        return (
+            self
+            .with_curl_script(
+                "https://www.python.org/ftp/python/3.7.3/python-3.7.3-amd64.exe",
+                "do-the-python.exe"
+            )
+            .with_script("do-the-python.exe /quiet TargetDir=%HOMEDRIVE%%HOMEPATH%\\python3")
+            .with_path_from_homedir("python3", "python3\\Scripts")
+            .with_script("pip install virtualenv==20.2.1")
+        )
 
 
 class UnixTaskMixin(Task):
